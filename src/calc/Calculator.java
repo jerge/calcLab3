@@ -26,15 +26,14 @@ public class Calculator {
         if (expr.length() == 0) {
             return NaN;
         }
-       // List<String> tokens = tokenize(expr);       <---------------- HERE are the methods!!!!
-       // List<String> postfix = infix2Postfix(tokens);
+        List<String> tokens = tokenize(expr);    //   <---------------- HERE are the methods!!!!
+//        List<String> postfix = infix2Postfix(tokens);
         return 0; // 0 just for now, should be: return evalPostfix(postfix);
     }
 
     // ------  Evaluate RPN expression -------------------
 
    // TODO
-
     double applyOperator(String op, double d1, double d2) {
         switch (op) {
             case "+":
@@ -90,7 +89,105 @@ public class Calculator {
     }
 
     // ---------- Tokenize -----------------------
-
     // TODO
+
+
+
+    private List<String> tokenize(String text) {
+        List<String> unfiltered = Arrays.asList(text.split(""));         // TODO LOOK AT TRIM
+        ArrayList<String> toBeRemoved = new ArrayList<>();
+        for (int i = 0; i < unfiltered.size(); i++) {
+            if ( !isOperator(unfiltered.get(i)) && !isDigit(unfiltered.get(i)) ) {
+                toBeRemoved.add(unfiltered.get(i));
+//                unfiltered.remove(i);
+            }
+        }
+        ArrayList<String> postRemoved = new ArrayList<>(unfiltered);
+        postRemoved.removeAll(toBeRemoved);
+        return digitsToNumbers(postRemoved);
+    }
+
+    private List<String> digitsToNumbers( List<String> unNumberized ) {
+        Deque<String> filtered = new ArrayDeque<>();
+        StringBuilder temp = new StringBuilder();
+        for ( String token:unNumberized ) {
+            if ( isDigit(token) ) {
+                temp.append(token);
+            } else {
+                filtered.push(temp.toString());
+                filtered.push(token);
+                temp.setLength(0);              // Clears temp
+            }
+        }
+        filtered.push(temp.toString());
+
+        List<String> finished = new ArrayList<>(filtered);
+        Collections.reverse(finished);
+        return finished;
+    }
+
+    private boolean isOperator(String token) {
+//        String operators = "+-*/^";
+        return "+-*/^()".contains(token);
+    }
+
+    private boolean isDigit(String token) {
+//        String numbers = "1234567890";
+        return "1234567890".contains(token);
+    }
+
+//    private List<String> infix2Postfix(List<String> infix) {
+//        Deque<String> rpn = new ArrayDeque<>();
+//        Deque<String> tempOperators = new ArrayDeque<>();
+//        boolean parenthesis = false;
+//        for ( int i = 0; i < infix.size(); i++ ) {
+//            if ( parenthesis && infix.get(i).equals(")") ) {   // Removes parenthesis if one is closed
+//                tempOperators.pop();
+//                parenthesis = false;
+//            } else if ( parenthesis ){              //
+//                infix2Postfix(infix.subList(i,infix.size()));       // HERE
+//            } else if ( getPrecedence(tempOperators.peek()) == getPrecedence(infix.get(i)) ){
+//                rpn.push(tempOperators.peek());
+//                tempOperators.pop();
+//                tempOperators.push(infix.get(i));
+//            } else if ( isOperator(infix.get(i)) ) {
+//                tempOperators.push(infix.get(i));
+//            } else if ( isNumber(infix.get(i)) ) {     // Remember that all numbers are only 1 character
+//                rpn.push(infix.get(i));
+//            } else {                        // Always a parenthesis
+//                parenthesis = true;
+//                tempOperators.push(infix.get(i));
+//            }
+//        }
+//        for ( String i:tempOperators ) {
+//            rpn.push(i);
+//            tempOperators.pop();
+//        }
+//        return rpn;
+//    }
+
+//    while there are tokens to be read:
+//    read a token.
+//	if the token is a number, then push it to the output queue.
+//	if the token is an operator, then:
+//            while there is an operator at the top of the operator stack with
+//    greater than or equal to precedence and the operator is left associative:
+//    pop operators from the operator stack, onto the output queue.
+//    push the read operator onto the operator stack.
+//            if the token is a left bracket (i.e. "("), then:
+//    push it onto the operator stack.
+//            if the token is a right bracket (i.e. ")"), then:
+//            while the operator at the top of the operator stack is not a left bracket:
+//    pop operators from the operator stack onto the output queue.
+//    pop the left bracket from the stack.
+//		/* if the stack runs out without finding a left bracket, then there are
+//		mismatched parentheses. */
+//if there are no more tokens to read:
+//            while there are still operator tokens on the stack:
+//    /* if the operator token on the top of the stack is a bracket, then
+//    there are mismatched parentheses. */
+//    pop the operator onto the output queue.
+//            exit.
+
 
 }

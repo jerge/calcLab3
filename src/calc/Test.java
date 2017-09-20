@@ -1,9 +1,6 @@
 package calc;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
+import java.util.*;
 
 import static java.lang.System.out;
 
@@ -21,10 +18,60 @@ public class Test {
 
     final Calculator calculator = new Calculator();
 
+//    private List<String> tokenize(String text) {
+//        List<String> unfiltered = Arrays.asList(text.split(""));         // TODO LOOK AT TRIM
+//        ArrayList<String> toBeRemoved = new ArrayList<>();
+//        for (int i = 0; i < unfiltered.size(); i++) {
+//            if ( !isOperator(unfiltered.get(i)) && !isDigit(unfiltered.get(i)) ) {
+//                toBeRemoved.add(unfiltered.get(i));
+////                unfiltered.remove(i);
+//            }
+//        }
+//
+//        ArrayList<String> postRemoved = new ArrayList<>(unfiltered);
+//        postRemoved.removeAll(toBeRemoved);
+//        return digitsToNumbers(postRemoved);
+//    }
+//
+//    private List<String> digitsToNumbers( List<String> unNumberized ) {
+//        Deque<String> filtered = new ArrayDeque<>();
+//        StringBuilder temp = new StringBuilder();
+//        for ( String token:unNumberized ) {
+//            if ( isDigit(token) ) {
+//                temp.append(token);
+//            } else {
+//                filtered.push(temp.toString());
+//                filtered.push(token);
+//                temp.setLength(0);              // Clears temp
+//            }
+//        }
+//        filtered.push(temp.toString());
+//
+//        List<String> finished = new ArrayList<>(filtered);
+//        Collections.reverse(finished);
+//        return finished;
+//    }
+
+    private boolean isOperator(String token) {
+//        String operators = "+-*/^";
+        return "+-*/^()".contains(token);
+    }
+
+    private boolean isDigit(String token) {
+//        String numbers = "1234567890";
+        return "1234567890".contains(token);
+    }
+
     void test() {
 
         // Here you could write your own test for "small" helper methods
 
+
+        String asd = "asd20+8asd1 23 * asd25 -asd 2äad";
+        List<String> unfiltered = Arrays.asList(asd.split(""));         // TODO LOOK AT TRIM
+//        ArrayList<String> finished = new ArrayList<>(unfiltered);
+        unfiltered.remove("a");
+//        out.println(tokenize(asd));
         /*
         out.println( call some helper method );
 
