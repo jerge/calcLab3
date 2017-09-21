@@ -27,7 +27,7 @@ public class Calculator {
             return NaN;
         }
         List<String> tokens = tokenize(expr);    //   <---------------- HERE are the methods!!!!
-//        List<String> postfix = infix2Postfix(tokens);
+        List<String> postfix = infix2Postfix(tokens);
         return 0; // 0 just for now, should be: return evalPostfix(postfix);
     }
 
@@ -136,35 +136,49 @@ public class Calculator {
         return "1234567890".contains(token);
     }
 
-//    private List<String> infix2Postfix(List<String> infix) {
-//        Deque<String> rpn = new ArrayDeque<>();
-//        Deque<String> tempOperators = new ArrayDeque<>();
-//        boolean parenthesis = false;
-//        for ( int i = 0; i < infix.size(); i++ ) {
-//            if ( parenthesis && infix.get(i).equals(")") ) {   // Removes parenthesis if one is closed
-//                tempOperators.pop();
-//                parenthesis = false;
-//            } else if ( parenthesis ){              //
-//                infix2Postfix(infix.subList(i,infix.size()));       // HERE
-//            } else if ( getPrecedence(tempOperators.peek()) == getPrecedence(infix.get(i)) ){
-//                rpn.push(tempOperators.peek());
-//                tempOperators.pop();
-//                tempOperators.push(infix.get(i));
-//            } else if ( isOperator(infix.get(i)) ) {
-//                tempOperators.push(infix.get(i));
-//            } else if ( isNumber(infix.get(i)) ) {     // Remember that all numbers are only 1 character
-//                rpn.push(infix.get(i));
-//            } else {                        // Always a parenthesis
-//                parenthesis = true;
-//                tempOperators.push(infix.get(i));
-//            }
-//        }
-//        for ( String i:tempOperators ) {
-//            rpn.push(i);
-//            tempOperators.pop();
-//        }
-//        return rpn;
-//    }
+    private int readNumber(List<String> li, String text) {
+        String[] split = text.split("");
+        for(String ch: split) {
+            if(isDigit(ch)){
+                li.add(ch);
+            }
+        }
+        return li.size();
+    }
+
+    private List<String> infix2Postfix(List<String> infix) {
+        Deque<String> rpn = new ArrayDeque<>();
+        Deque<String> tempOperators = new ArrayDeque<>();
+        boolean parenthesis = false;
+        for ( int i = 0; i < infix.size(); i++ ) {
+            if ( parenthesis && infix.get(i).equals(")") ) {   // Removes parenthesis if one is closed
+                tempOperators.pop();
+                parenthesis = false;
+            } else if ( parenthesis ){              //
+                for (String thing:( infix2Postfix(infix.subList(i,infix.size())) )) {
+                    rpn.push(thing);
+                    // CHECK IF REVErSED
+                }
+            } else if ( getPrecedence(tempOperators.peek()) == getPrecedence(infix.get(i)) ){
+                rpn.push(tempOperators.peek());
+                tempOperators.pop();
+                tempOperators.push(infix.get(i));
+            } else if ( isOperator(infix.get(i)) ) {
+                tempOperators.push(infix.get(i));
+            } else if ( isDigit(infix.get(i)) ) {     // Remember that all numbers are only 1 character
+                rpn.push(infix.get(i));
+            } else {                        // Always a parenthesis
+                parenthesis = true;
+                tempOperators.push(infix.get(i));
+            }
+        }
+        for ( String i:tempOperators ) {
+            rpn.push(i);
+            tempOperators.pop();
+        }
+//        List<String> finished = new ArrayList<>(rpn);
+        return new ArrayList<>(rpn);
+    }
 
 //    while there are tokens to be read:
 //    read a token.

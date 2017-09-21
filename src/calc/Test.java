@@ -17,40 +17,38 @@ public class Test {
     }
 
     final Calculator calculator = new Calculator();
+    private List<String> tokenize(String text) {
+        List<String> unfiltered = Arrays.asList(text.split(""));         // TODO LOOK AT TRIM
+        ArrayList<String> toBeRemoved = new ArrayList<>();
+        for (int i = 0; i < unfiltered.size(); i++) {
+            if ( !isOperator(unfiltered.get(i)) && !isDigit(unfiltered.get(i)) ) {
+                toBeRemoved.add(unfiltered.get(i));
+//                unfiltered.remove(i);
+            }
+        }
+        ArrayList<String> postRemoved = new ArrayList<>(unfiltered);
+        postRemoved.removeAll(toBeRemoved);
+        return digitsToNumbers(postRemoved);
+    }
 
-//    private List<String> tokenize(String text) {
-//        List<String> unfiltered = Arrays.asList(text.split(""));         // TODO LOOK AT TRIM
-//        ArrayList<String> toBeRemoved = new ArrayList<>();
-//        for (int i = 0; i < unfiltered.size(); i++) {
-//            if ( !isOperator(unfiltered.get(i)) && !isDigit(unfiltered.get(i)) ) {
-//                toBeRemoved.add(unfiltered.get(i));
-////                unfiltered.remove(i);
-//            }
-//        }
-//
-//        ArrayList<String> postRemoved = new ArrayList<>(unfiltered);
-//        postRemoved.removeAll(toBeRemoved);
-//        return digitsToNumbers(postRemoved);
-//    }
-//
-//    private List<String> digitsToNumbers( List<String> unNumberized ) {
-//        Deque<String> filtered = new ArrayDeque<>();
-//        StringBuilder temp = new StringBuilder();
-//        for ( String token:unNumberized ) {
-//            if ( isDigit(token) ) {
-//                temp.append(token);
-//            } else {
-//                filtered.push(temp.toString());
-//                filtered.push(token);
-//                temp.setLength(0);              // Clears temp
-//            }
-//        }
-//        filtered.push(temp.toString());
-//
-//        List<String> finished = new ArrayList<>(filtered);
-//        Collections.reverse(finished);
-//        return finished;
-//    }
+    private List<String> digitsToNumbers( List<String> unNumberized ) {
+        Deque<String> filtered = new ArrayDeque<>();
+        StringBuilder temp = new StringBuilder();
+        for ( String token:unNumberized ) {
+            if ( isDigit(token) ) {
+                temp.append(token);
+            } else {
+                filtered.push(temp.toString());
+                filtered.push(token);
+                temp.setLength(0);              // Clears temp
+            }
+        }
+        filtered.push(temp.toString());
+
+        List<String> finished = new ArrayList<>(filtered);
+        Collections.reverse(finished);
+        return finished;
+    }
 
     private boolean isOperator(String token) {
 //        String operators = "+-*/^";
@@ -62,15 +60,115 @@ public class Test {
         return "1234567890".contains(token);
     }
 
+    private boolean isNumber(String text) {
+        String[] split = text.split("");
+        for(String ch: split) {
+            if(!isDigit(ch)){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    enum Assoc {
+        LEFT,
+        RIGHT
+    }
+
+    Assoc getAssociativity(String op) {
+        if ("+-*/".contains(op)) {
+            return Assoc.LEFT;
+        } else if ("^".contains(op)) {
+            return Assoc.RIGHT;
+        } else {
+            throw new RuntimeException(OP_NOT_FOUND);
+        }
+    }
+
+    // TODO FIX IS NUMBER
+
+    final static String OP_NOT_FOUND = "Operator not found";
+
+
+    int getPrecedence(String op) {
+        if ("+-".contains(op)) {
+            return 2;
+        } else if ("*/".contains(op)) {
+            return 3;
+        } else if ("^".contains(op)) {
+            return 4;
+        } else {
+            throw new RuntimeException(OP_NOT_FOUND);
+        }
+    }
+
+    private List<String> infix2Postfix(List<String> infix) {
+        Deque<String> rpn = new ArrayDeque<>();
+        Deque<String> tempOperators = new ArrayDeque<>();
+        boolean parenthesis = false;
+        for ( int i = 0; i < infix.size(); i++ ) {
+            if ( infix.get(i).equals("(")) {
+                
+            } else if ( infix.get(i).equals(")")){
+
+//            if ( parenthesis && infix.get(i).equals(")") ) {   // Removes parenthesis if one is closed
+//                tempOperators.pop();
+//                parenthesis = false;
+//            } else if ( parenthesis ){              //
+//                for (String thing:( infix2Postfix(infix.subList(i,infix.size())) )) {
+//                    rpn.push(thing);
+//                    // CHECK IF REVErSED
+//                }
+            } else if ( isNumber(infix.get(i)) ) {     // Remember that all numbers are only 1 character
+                rpn.push(infix.get(i));
+            } else if ( tempOperators.size() != 0
+                    && getPrecedence(tempOperators.peek()) >= getPrecedence(infix.get(i))
+                    && getAssociativity(infix.get(i)) == Assoc.LEFT ) {
+                rpn.push(tempOperators.peek());
+                tempOperators.pop();
+                tempOperators.push(infix.get(i));
+            } else if ( isOperator(infix.get(i)) ) {
+                tempOperators.push(infix.get(i));
+//            } else {                        // Always a parenthesis
+//                parenthesis = true;
+//                tempOperators.push(infix.get(i));
+            }
+        }
+        for ( String i:tempOperators ) {
+            rpn.push(i);
+            tempOperators.pop();
+        }
+        List<String> finished = new ArrayList<>(rpn);
+        Collections.reverse(finished);
+        return finished;
+    }
+
     void test() {
 
         // Here you could write your own test for "small" helper methods
 
 
-        String asd = "asd20+8asd1 23 * asd25 -asd 2äad";
-        List<String> unfiltered = Arrays.asList(asd.split(""));         // TODO LOOK AT TRIM
-//        ArrayList<String> finished = new ArrayList<>(unfiltered);
-        unfiltered.remove("a");
+
+        // inp: 20+8123*25-2
+        // res: 20 25 8123 * 2 - +
+        // steps: rpn[] tempOperators[] input[]
+        // [20] [] [+ 8123 * 25 - 2] push 20
+        // [20] [+] [8123 * 25 - 2] pushT op
+        // [8123 20] [+] [* 25 - 2] push 8123
+        // [8123 20] [* +] [25 - 2] pushT op (due to higher precedence)
+        // [25 8123 20] [* +] [- 2] push 25
+        // [* 25 8123 20] [- +] [2] pushT op (due to current < precedence)
+        // [2 * 25 8123 20] [- +] push 2
+        // [+ - 2 * 25 8123 20] empty T
+        // [20 8123 25 * 2 - +] reverse
+//        String asd = "asd20+8asd1 23 * asd25 -asd 2äad";
+//        List<String> tokens = tokenize(asd);    //   <---------------- HERE are the methods!!!!
+//        out.println(tokenize(asd));
+//        List<String> postfix = infix2Postfix(tokens);
+//        out.println("Hand-parsed:");
+//        out.println("20 25 8123 * 2 - +");
+//        out.println("Computer-parsed:");
+//        out.println(postfix);
 //        out.println(tokenize(asd));
         /*
         out.println( call some helper method );
@@ -80,31 +178,34 @@ public class Test {
         // Uncomment below line by line to test (also must uncomment helper methods, last)
 
         // Tokenization ---------------------------
-       /*
-        t("1 + 10", "1 + 10");  // Arguments are input and expected output
-        t("1+ 10", "1 + 10");   // Expected is in fact a list [ "1", "+", "10"]
-        t("1 +10", "1 + 10");
-        t("1+10", "1 + 10");
-        t("(1+10) ", "( 1 + 10 )");  // List is [ "(", "1", "+", "10", ")" ]
-        t("2 *( 1+10) ", "2 * ( 1 + 10 )");
-        t("(1 +2) /2 *( 1+10) ", "( 1 + 2 ) / 2 * ( 1 + 10 )");
-        */
+
+//        out.println(tokenize("1 + 10"));   // Arguments are input and expected output
+//        out.println(tokenize("1+ 10"));  // Expected is in fact a list [ "1", "+", "10"]
+//        out.println(tokenize("1 +10"));
+//        out.println(tokenize("1+10"));
+//        out.println(tokenize("(1+10) "));
+//        out.println(tokenize("2 *( 1+10) "));
+//        out.println(tokenize("(1 +2) /2 *( 1+10) "));
+
 
 
         // Infix to postfix -----------------------
-      /*
-        i2p("1+10", "1 10 +");
-        i2p("1+2+3", "1 2 + 3 +");
-        i2p("1+2-3", "1 2 + 3 -");
-        i2p("3-2-1", "3 2 - 1 -");
-        i2p("1 + 2 * 3", "1 2 3 * +");
-        i2p("1 / 2 + 3", "1 2 / 3 +");
-        i2p("20/4/2", "20 4 / 2 /");
-        i2p("4^3^2", "4 3 2 ^ ^");
-        i2p("4^3*2", "4 3 ^ 2 *");
-        i2p("(1+2)*3", "1 2 + 3 *");
-        i2p("2^(1+1)", "2 1 1 + ^");
-      */
+
+//        new ArrayList<String>(Arrays.asList("1 10 +".split(" ")));
+//        out.println(tokenize("4 3 ^ 2 *"));
+//        out.println(infix2Postfix(tokenize("1+10")).toString());
+//        out.println(new ArrayList<String>(Arrays.asList("1 10 +".split(" "))).toString());
+        out.println(infix2Postfix(tokenize("1+10")).toString()             .equals(new ArrayList<>(Arrays.asList("1 10 +".split(" "))).toString()) );
+        out.println(infix2Postfix(tokenize("1+2+3")).toString()            .equals(new ArrayList<>(Arrays.asList("1 2 + 3 +".split(" "))).toString()) );
+        out.println(infix2Postfix(tokenize("1+2-3")).toString()            .equals(new ArrayList<>(Arrays.asList("1 2 + 3 -".split(" "))).toString()) );
+        out.println(infix2Postfix(tokenize("3-2-1")).toString()            .equals(new ArrayList<>(Arrays.asList("3 2 - 1 -".split(" "))).toString()) );
+        out.println(infix2Postfix(tokenize("1 + 2 * 3")).toString()        .equals(new ArrayList<>(Arrays.asList( "1 2 3 * +".split(" "))).toString()) );
+        out.println(infix2Postfix(tokenize("1 / 2 + 3")).toString()        .equals(new ArrayList<>(Arrays.asList("1 2 / 3 +".split(" "))).toString()) );
+        out.println(infix2Postfix(tokenize("20/4/2")).toString()           .equals(new ArrayList<>(Arrays.asList("20 4 / 2 /".split(" "))).toString()) );
+        out.println(infix2Postfix(tokenize("4^3^2")).toString()            .equals(new ArrayList<>(Arrays.asList("4 3 2 ^ ^".split(" "))).toString()) );
+        out.println(infix2Postfix(tokenize("4^3*2")).toString()            .equals(new ArrayList<>(Arrays.asList("4 3 ^ 2 *".split(" "))).toString()) );
+        out.println(infix2Postfix(tokenize("(1+2)*3")).toString()          .equals(new ArrayList<String>(Arrays.asList("1 2 + 3 *".split(" "))).toString()) );
+//        out.println(infix2Postfix(tokenize("2^(1+1)")).toString()          .equals(new ArrayList<String>(Arrays.asList("2 1 1 + ^".split(" "))).toString()) );
 
         // Evaluation ------------------------------
        /*
