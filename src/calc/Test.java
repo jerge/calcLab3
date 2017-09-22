@@ -17,17 +17,20 @@ public class Test {
     }
 
     final Calculator calculator = new Calculator();
+
+    final static String MISSING_OPERAND = "Missing or bad operand";
+
     private List<String> tokenize(String text) {
         List<String> unfiltered = Arrays.asList(text.split(""));         // TODO LOOK AT TRIM
         ArrayList<String> toBeRemoved = new ArrayList<>();
-        for (int i = 0; i < unfiltered.size(); i++) {
-            if ( !isOperator(unfiltered.get(i)) && !isDigit(unfiltered.get(i)) ) {
-                toBeRemoved.add(unfiltered.get(i));
-//                unfiltered.remove(i);
+        for (String token:unfiltered) {
+            if ( !isOperator(token) && !isDigit(token) && !isParenthesis(token) ) {  // TODO Remember to make sure parenthesis succeeds
+                toBeRemoved.add(token);
             }
         }
         ArrayList<String> postRemoved = new ArrayList<>(unfiltered);
         postRemoved.removeAll(toBeRemoved);
+        checkParentheses(postRemoved);
         return digitsToNumbers(postRemoved);
     }
 
@@ -37,14 +40,17 @@ public class Test {
         for ( String token:unNumberized ) {
             if ( isDigit(token) ) {
                 temp.append(token);
+            } else if (temp.toString().equals("")) {
+                filtered.push(token);
             } else {
                 filtered.push(temp.toString());
                 filtered.push(token);
                 temp.setLength(0);              // Clears temp
             }
         }
-        filtered.push(temp.toString());
-
+        if (!temp.toString().equals("")) {
+            filtered.push(temp.toString());
+        }
         List<String> finished = new ArrayList<>(filtered);
         Collections.reverse(finished);
         return finished;
@@ -52,7 +58,11 @@ public class Test {
 
     private boolean isOperator(String token) {
 //        String operators = "+-*/^";
-        return "+-*/^()".contains(token);
+        return "+-*/^".contains(token);
+    }
+
+    private boolean isParenthesis(String token) {
+        return "()".contains(token);
     }
 
     private boolean isDigit(String token) {
@@ -85,6 +95,27 @@ public class Test {
         }
     }
 
+    boolean checkParentheses(ArrayList<String> expr) {
+        Deque<String> grabb = new ArrayDeque<>();
+        grabb.push("");
+        for (String ch : expr) {
+            if(ch.equals(")")) {
+                if ("(".equals(grabb.peek())) {
+                    grabb.pop();
+                } else {
+                    throw new RuntimeException(MISSING_OPERAND);
+                }
+            } else if (ch.equals("(")) {
+                grabb.push(ch);
+            }
+
+        }
+        grabb.pop();
+        return grabb.isEmpty();
+    }
+
+    // This is interesting because have to return, but what if no match?!?
+
     // TODO FIX IS NUMBER
 
     final static String OP_NOT_FOUND = "Operator not found";
@@ -105,43 +136,55 @@ public class Test {
     private List<String> infix2Postfix(List<String> infix) {
         Deque<String> rpn = new ArrayDeque<>();
         Deque<String> tempOperators = new ArrayDeque<>();
-        boolean parenthesis = false;
         for ( int i = 0; i < infix.size(); i++ ) {
-            if ( infix.get(i).equals("(")) {
-                
-            } else if ( infix.get(i).equals(")")){
-
-//            if ( parenthesis && infix.get(i).equals(")") ) {   // Removes parenthesis if one is closed
-//                tempOperators.pop();
-//                parenthesis = false;
-//            } else if ( parenthesis ){              //
-//                for (String thing:( infix2Postfix(infix.subList(i,infix.size())) )) {
-//                    rpn.push(thing);
-//                    // CHECK IF REVErSED
-//                }
-            } else if ( isNumber(infix.get(i)) ) {     // Remember that all numbers are only 1 character
+            if ( infix.get(i).equals(")") ) {           // Removes parenthesis if one is closed
+            break;
+            } else if ( infix.get(i).equals("(") ){     // Calls itself to execute over THE parenthesis
+                List<String> recList = infix2Postfix( infix.subList(i+1, infix.size() ));   // Saves the result RPN
+                for ( int j = 0; j < recList.size(); j++ ){     // Empties result to RPN
+                   rpn.push(recList.get(j));
+                }
+                i += recList.size() - 1 + countParenthesisInNest(infix.subList(i+1,infix.size()));  // Jump to right after THE parenthesis closes
+            } else if ( isNumber(infix.get(i)) ) {              // Pushes number
                 rpn.push(infix.get(i));
-            } else if ( tempOperators.size() != 0
-                    && getPrecedence(tempOperators.peek()) >= getPrecedence(infix.get(i))
-                    && getAssociativity(infix.get(i)) == Assoc.LEFT ) {
-                rpn.push(tempOperators.peek());
+            } else if ( tempOperators.size() != 0               // To avoid errors on next two rows
+                    && getPrecedence(tempOperators.peek()) >= getPrecedence(infix.get(i))   // Checks if the precedence is correct
+                    && getAssociativity(infix.get(i)) == Assoc.LEFT ) {                     // Checks if the association is correct
+                rpn.push(tempOperators.peek());     // Pushes the lower precedence & Adds the higher to temp
                 tempOperators.pop();
                 tempOperators.push(infix.get(i));
-            } else if ( isOperator(infix.get(i)) ) {
+            } else if ( isOperator(infix.get(i)) ) {    // Pushes the operator
                 tempOperators.push(infix.get(i));
-//            } else {                        // Always a parenthesis
-//                parenthesis = true;
-//                tempOperators.push(infix.get(i));
+            } else {
+                throw new RuntimeException("Det blev fel");
             }
         }
-        for ( String i:tempOperators ) {
+        for ( String i:tempOperators ) {    // Empties result to RPN
             rpn.push(i);
             tempOperators.pop();
         }
-        List<String> finished = new ArrayList<>(rpn);
+        List<String> finished = new ArrayList<>(rpn);       // Reverses the stack
         Collections.reverse(finished);
         return finished;
     }
+
+    private int countParenthesisInNest(List<String> list) { // Returns the amount of times you need to skip to get out of the current nest
+        int count = 1;
+        int starts = 1;
+        int index = 0;
+        while (starts > 0) {
+            if (list.get(index).equals("(")) {
+                count ++;
+                starts ++;
+            } else if (list.get(index).equals(")")) {
+                count ++;
+                starts --;
+            }
+            index ++;
+        }
+        return count;
+    }
+
 
     void test() {
 
@@ -161,14 +204,19 @@ public class Test {
         // [2 * 25 8123 20] [- +] push 2
         // [+ - 2 * 25 8123 20] empty T
         // [20 8123 25 * 2 - +] reverse
-//        String asd = "asd20+8asd1 23 * asd25 -asd 2äad";
-//        List<String> tokens = tokenize(asd);    //   <---------------- HERE are the methods!!!!
-//        out.println(tokenize(asd));
-//        List<String> postfix = infix2Postfix(tokens);
+
+        List<String> ex1 = Arrays.asList("1+(2+3))*(((3+5)))".split(""));
+        out.println(countParenthesisInNest(ex1) == 4);
+
+        String asd = "(1*(2+3))*(3+5)";
+        // 1 2 3 + * 3 5 + *
+        List<String> tokens = tokenize(asd);    //   <---------------- HERE are the methods!!!!
+        out.println(tokenize(asd));
+        List<String> postfix = infix2Postfix(tokens);
 //        out.println("Hand-parsed:");
 //        out.println("20 25 8123 * 2 - +");
-//        out.println("Computer-parsed:");
-//        out.println(postfix);
+        out.println("Computer-parsed:");
+        out.println(postfix);
 //        out.println(tokenize(asd));
         /*
         out.println( call some helper method );
@@ -204,8 +252,10 @@ public class Test {
         out.println(infix2Postfix(tokenize("20/4/2")).toString()           .equals(new ArrayList<>(Arrays.asList("20 4 / 2 /".split(" "))).toString()) );
         out.println(infix2Postfix(tokenize("4^3^2")).toString()            .equals(new ArrayList<>(Arrays.asList("4 3 2 ^ ^".split(" "))).toString()) );
         out.println(infix2Postfix(tokenize("4^3*2")).toString()            .equals(new ArrayList<>(Arrays.asList("4 3 ^ 2 *".split(" "))).toString()) );
-        out.println(infix2Postfix(tokenize("(1+2)*3")).toString()          .equals(new ArrayList<String>(Arrays.asList("1 2 + 3 *".split(" "))).toString()) );
-//        out.println(infix2Postfix(tokenize("2^(1+1)")).toString()          .equals(new ArrayList<String>(Arrays.asList("2 1 1 + ^".split(" "))).toString()) );
+        out.println(infix2Postfix(tokenize("(1+2)*3")).toString()          .equals(new ArrayList<>(Arrays.asList("1 2 + 3 *".split(" "))).toString()) );
+        out.println(infix2Postfix(tokenize("2^(1+1)")).toString()          .equals(new ArrayList<>(Arrays.asList("2 1 1 + ^".split(" "))).toString()) );
+        out.println(infix2Postfix(tokenize("(1*(2+3))*3")).toString()      .equals(new ArrayList<>(Arrays.asList("1 2 3 + * 3 *".split(" "))).toString()) );
+        out.println(infix2Postfix(tokenize("2^(1+1)")).toString()          .equals(new ArrayList<>(Arrays.asList("2 1 1 + ^".split(" "))).toString()) );
 
         // Evaluation ------------------------------
        /*
